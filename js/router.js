@@ -1,5 +1,7 @@
 const rutas = new Map();
 
+let handlerHashchangeActual = null;
+
 export function registrarRuta(hash, montar) {
   rutas.set(hash, montar);
 }
@@ -11,6 +13,10 @@ export async function iniciarRouter(contenedor, obtenerContexto) {
     contenedor.innerHTML = '';
     await montar(contenedor, obtenerContexto());
   }
+  if (handlerHashchangeActual) {
+    window.removeEventListener('hashchange', handlerHashchangeActual);
+  }
+  handlerHashchangeActual = render;
   window.addEventListener('hashchange', render);
   await render();
 }
