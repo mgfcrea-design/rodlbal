@@ -20,5 +20,16 @@ export async function sesionActual() {
 
 export function onCambioSesion(callback) {
   const supabase = getSupabaseClient();
-  supabase.auth.onAuthStateChange((_evento, session) => callback(session));
+  // Supabase dispara este evento no solo en login/logout sino también en
+  // TOKEN_REFRESHED (~cada hora) e INITIAL_SESSION. Solo nos interesa
+  // reaccionar cuando la *presencia* de sesión cambia (logueado <-> deslogueado);
+  // de lo contrario un refresh de token remontaría toda la app y borraría
+  // texto sin guardar en pantallas como "Cargar cierre".
+  let haySesionPrevia = null;
+  supabase.auth.onAuthStateChange((_evento, session) => {
+    const haySesionAhora = Boolean(session);
+    if (haySesionPrevia === haySesionAhora) return;
+    haySesionPrevia = haySesionAhora;
+    callback(session);
+  });
 }

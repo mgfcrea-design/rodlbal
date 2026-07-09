@@ -2,6 +2,30 @@ import { getSupabaseClient } from './supabaseClient.js';
 
 const supabase = getSupabaseClient();
 
+const PAGE_SIZE = 1000;
+
+/**
+ * Ejecuta una query de Supabase paginando con .range() hasta agotar los
+ * resultados, para evitar el límite por defecto de 1000 filas de PostgREST.
+ *
+ * @param {(query: import('@supabase/supabase-js').PostgrestFilterBuilder) => import('@supabase/supabase-js').PostgrestFilterBuilder} buildQuery
+ *   Función que recibe el query builder base (`supabase.from(tabla).select(...)`
+ *   con los `.eq()`/`.order()` ya aplicados) y le agrega `.range()` para la página pedida.
+ * @returns {Promise<any[]>} Todas las filas concatenadas.
+ */
+async function fetchTodasLasFilas(buildQuery) {
+  const filas = [];
+  let offset = 0;
+  for (;;) {
+    const { data, error } = await buildQuery(offset, offset + PAGE_SIZE - 1);
+    if (error) throw error;
+    filas.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return filas;
+}
+
 export const supabaseRepo = {
   async getCierreEnProgreso() {
     const { data, error } = await supabase
@@ -24,11 +48,9 @@ export const supabaseRepo = {
   },
 
   async getCodigosGuardados(cierreId) {
-    const { data, error } = await supabase
-      .from('lecturas_stock')
-      .select('codigo')
-      .eq('cierre_id', cierreId);
-    if (error) throw error;
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase.from('lecturas_stock').select('codigo').eq('cierre_id', cierreId).range(desde, hasta)
+    );
     return new Set(data.map((fila) => fila.codigo));
   },
 
@@ -71,11 +93,9 @@ export const supabaseRepo = {
   },
 
   async getCodigosDeCierre(cierreId) {
-    const { data, error } = await supabase
-      .from('lecturas_stock')
-      .select('codigo')
-      .eq('cierre_id', cierreId);
-    if (error) throw error;
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase.from('lecturas_stock').select('codigo').eq('cierre_id', cierreId).range(desde, hasta)
+    );
     return data.map((fila) => fila.codigo);
   },
 
@@ -122,15 +142,19 @@ export const supabaseRepo = {
   },
 
   async listarProductosConLecturas() {
-    const { data: productos, error: errorProductos } = await supabase
-      .from('productos')
-      .select('codigo, descripcion');
-    if (errorProductos) throw errorProductos;
+    const productos = await fetchTodasLasFilas((desde, hasta) =>
+      supabase.from('productos').select('codigo, descripcion').range(desde, hasta)
+    );
 
-    const { data: lecturas, error: errorLecturas } = await supabase
-      .from('lecturas_stock')
-      .select('codigo, cantidad_total, cierres(fecha)');
-    if (errorLecturas) throw errorLecturas;
+    // Solo se consideran lecturas de cierres finalizados: un cierre en progreso
+    // está incompleto y no debe alimentar métricas de ranking/histórico.
+    const lecturas = await fetchTodasLasFilas((desde, hasta) =>
+      supabase
+        .from('lecturas_stock')
+        .select('codigo, cantidad_total, cierres!inner(fecha, estado)')
+        .eq('cierres.estado', 'finalizado')
+        .range(desde, hasta)
+    );
 
     const lecturasPorCodigo = new Map();
     for (const l of lecturas) {
@@ -157,11 +181,15 @@ export const supabaseRepo = {
   },
 
   async getLecturasProducto(codigo) {
-    const { data, error } = await supabase
-      .from('lecturas_stock')
-      .select('cantidad_total, cantidad_barcelona, precio_neto, cierres(fecha)')
-      .eq('codigo', codigo);
-    if (error) throw error;
+    // Solo cierres finalizados: ver Finding 2 en listarProductosConLecturas.
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase
+        .from('lecturas_stock')
+        .select('cantidad_total, cantidad_barcelona, precio_neto, cierres!inner(fecha, estado)')
+        .eq('codigo', codigo)
+        .eq('cierres.estado', 'finalizado')
+        .range(desde, hasta)
+    );
     return data
       .map((l) => ({
         fecha: l.cierres.fecha,
@@ -173,11 +201,13 @@ export const supabaseRepo = {
   },
 
   async getTodasLasLecturas() {
-    const { data, error } = await supabase
-      .from('lecturas_stock')
-      .select('codigo, cantidad_total, cantidad_barcelona, precio_neto, productos(descripcion), cierres(fecha)')
-      .order('codigo');
-    if (error) throw error;
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase
+        .from('lecturas_stock')
+        .select('codigo, cantidad_total, cantidad_barcelona, precio_neto, productos(descripcion), cierres(fecha)')
+        .order('codigo')
+        .range(desde, hasta)
+    );
     return data.map((l) => ({
       codigo: l.codigo,
       descripcion: l.productos.descripcion,
