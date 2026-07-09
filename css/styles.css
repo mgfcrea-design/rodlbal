@@ -1,0 +1,17 @@
+:root {
+  color-scheme: light dark;
+  --gap: 0.75rem;
+}
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+#nav { display: flex; gap: var(--gap); padding: var(--gap); border-bottom: 1px solid #8884; flex-wrap: wrap; align-items: center; }
+#nav a { text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 6px; }
+#nav a:hover { background: #8882; }
+#app { padding: var(--gap); max-width: 1100px; margin: 0 auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #8884; text-align: left; font-size: 0.9rem; }
+.aviso { padding: 0.6rem; border-radius: 6px; margin: 0.5rem 0; }
+.aviso-nuevo { background: #2a7d4630; }
+.aviso-desaparecido { background: #b5433030; }
+.aviso-duplicado { background: #d9a52630; }
+button { cursor: pointer; }
