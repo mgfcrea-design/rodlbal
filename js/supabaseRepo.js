@@ -35,7 +35,7 @@ export const supabaseRepo = {
   async guardarLecturas(cierreId, articulos) {
     if (articulos.length === 0) return;
 
-    await supabase.from('productos').upsert(
+    const { error: errorProductos } = await supabase.from('productos').upsert(
       articulos.map((a) => ({
         codigo: a.codigo,
         descripcion: a.descripcion,
@@ -43,6 +43,7 @@ export const supabaseRepo = {
       })),
       { onConflict: 'codigo' }
     );
+    if (errorProductos) throw errorProductos;
 
     const { error } = await supabase.from('lecturas_stock').upsert(
       articulos.map((a) => ({
@@ -56,11 +57,17 @@ export const supabaseRepo = {
     );
     if (error) throw error;
 
-    const { count } = await supabase
+    const { count, error: errorCount } = await supabase
       .from('lecturas_stock')
       .select('id', { count: 'exact', head: true })
       .eq('cierre_id', cierreId);
-    await supabase.from('cierres').update({ n_codigos: count }).eq('id', cierreId);
+    if (errorCount) throw errorCount;
+
+    const { error: errorUpdate } = await supabase
+      .from('cierres')
+      .update({ n_codigos: count })
+      .eq('id', cierreId);
+    if (errorUpdate) throw errorUpdate;
   },
 
   async getCodigosDeCierre(cierreId) {
