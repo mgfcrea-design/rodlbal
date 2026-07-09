@@ -123,11 +123,34 @@ test('funciona aunque el primer bloque no empiece con la palabra "preview" (pega
   assert.equal(articulos[0].codigo, 'PT00003994');
 });
 
-test('cuenta como no reconocido un bloque sin "Nº REPA" seguido de cantidad', () => {
+test('ignora bloques sin línea de código Nº REPA', () => {
   const textoRoto = `preview
 Descripción huérfana sin código ni cantidad
 Articulo no ubicado en tienda, consultar en mostrador`;
   const { articulos, noReconocidos } = parseBloque(textoRoto);
   assert.equal(articulos.length, 0);
   assert.equal(noReconocidos, 0);
+});
+
+test('cuenta como no reconocido un bloque con Nº REPA pero sin línea de cantidad', () => {
+  const textoRoto = `preview
+Resistencia 1000 W 380 V L 445 mm
+Nº REPA PT00003994
+Precio lista: 167,26 €
+Precio Neto: 150,53 €
+en Stock
+Articulo no ubicado en tienda, consultar en mostrador`;
+  const { articulos, noReconocidos } = parseBloque(textoRoto);
+  assert.equal(articulos.length, 0);
+  assert.equal(noReconocidos, 1);
+});
+
+test('cuenta como no reconocido un bloque con Nº REPA pero sin descripción válida antes', () => {
+  const textoRoto = `preview
+Nº REPA PT00003994
+1000 CANT en stock
+Articulo no ubicado en tienda, consultar en mostrador`;
+  const { articulos, noReconocidos } = parseBloque(textoRoto);
+  assert.equal(articulos.length, 0);
+  assert.equal(noReconocidos, 1);
 });
