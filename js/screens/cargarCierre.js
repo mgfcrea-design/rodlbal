@@ -8,7 +8,13 @@ import {
 
 export async function montarCargarCierre(contenedor, { repo }) {
   const hoy = new Date().toISOString().slice(0, 10);
-  let cierre = await abrirOReanudarCierre(repo, hoy);
+  let cierre;
+  try {
+    cierre = await abrirOReanudarCierre(repo, hoy);
+  } catch (error) {
+    contenedor.innerHTML = `<p class="aviso aviso-desaparecido">Error al abrir el cierre: ${error.message}. Recarga la página para volver a intentarlo.</p>`;
+    return;
+  }
 
   contenedor.innerHTML = `
     <h2>Cargar cierre — ${cierre.fecha}</h2>
@@ -44,45 +50,57 @@ export async function montarCargarCierre(contenedor, { repo }) {
       return;
     }
 
-    const { duplicados } = await procesarBloque(repo, cierre.id, articulos);
-    let sobrescribir = true;
-    if (duplicados.length > 0) {
-      sobrescribir = confirm(
-        `${duplicados.length} código(s) ya estaban en este cierre: ${duplicados
-          .map((d) => d.codigo)
-          .join(', ')}.\n¿Sobrescribir con los valores nuevos? Cancelar = ignorar duplicados.`
+    try {
+      const { duplicados } = await procesarBloque(repo, cierre.id, articulos);
+      let sobrescribir = true;
+      if (duplicados.length > 0) {
+        sobrescribir = confirm(
+          `${duplicados.length} código(s) ya estaban en este cierre: ${duplicados
+            .map((d) => d.codigo)
+            .join(', ')}.\n¿Sobrescribir con los valores nuevos? Cancelar = ignorar duplicados.`
+        );
+      }
+
+      const guardados = await guardarArticulos(repo, cierre.id, articulos, {
+        sobrescribirDuplicados: sobrescribir,
+      });
+
+      mostrarAviso(
+        `Bloque procesado: ${guardados} código(s) guardados, ${noReconocidos} línea(s) no reconocidas.`,
+        'aviso-nuevo'
       );
+      textareaEl.value = '';
+      await actualizarContador();
+    } catch (error) {
+      mostrarAviso(`Error al guardar el bloque: ${error.message}. Vuelve a intentarlo.`, 'aviso-desaparecido');
     }
-
-    const guardados = await guardarArticulos(repo, cierre.id, articulos, {
-      sobrescribirDuplicados: sobrescribir,
-    });
-
-    mostrarAviso(
-      `Bloque procesado: ${guardados} código(s) guardados, ${noReconocidos} línea(s) no reconocidas.`,
-      'aviso-nuevo'
-    );
-    textareaEl.value = '';
-    await actualizarContador();
   });
 
   contenedor.querySelector('#btn-finalizar').addEventListener('click', async () => {
     if (!confirm(`¿Finalizar el cierre del ${cierre.fecha}? No podrás añadir más bloques después.`)) return;
 
-    const { nuevos, desaparecidos } = await finalizarCierre(repo, cierre.id);
+    try {
+      const { nuevos, desaparecidos } = await finalizarCierre(repo, cierre.id);
 
-    avisosEl.innerHTML = '';
-    if (nuevos.length > 0) {
-      mostrarAviso(`Códigos nuevos respecto al cierre anterior: ${nuevos.join(', ')}`, 'aviso-nuevo');
+      avisosEl.innerHTML = '';
+      if (nuevos.length > 0) {
+        mostrarAviso(`Códigos nuevos respecto al cierre anterior: ${nuevos.join(', ')}`, 'aviso-nuevo');
+      }
+      if (desaparecidos.length > 0) {
+        mostrarAviso(
+          `Códigos que NO aparecieron en este cierre (se mantiene su último valor conocido): ${desaparecidos.join(', ')}`,
+          'aviso-desaparecido'
+        );
+      }
+      mostrarAviso('Cierre finalizado correctamente.', 'aviso-nuevo');
+    } catch (error) {
+      mostrarAviso(`Error al finalizar el cierre: ${error.message}. Vuelve a intentarlo.`, 'aviso-desaparecido');
     }
-    if (desaparecidos.length > 0) {
-      mostrarAviso(
-        `Códigos que NO aparecieron en este cierre (se mantiene su último valor conocido): ${desaparecidos.join(', ')}`,
-        'aviso-desaparecido'
-      );
-    }
-    mostrarAviso('Cierre finalizado correctamente.', 'aviso-nuevo');
   });
 
-  await actualizarContador();
+  try {
+    await actualizarContador();
+  } catch (error) {
+    mostrarAviso(`Error al cargar el contador de códigos: ${error.message}.`, 'aviso-desaparecido');
+  }
 }
