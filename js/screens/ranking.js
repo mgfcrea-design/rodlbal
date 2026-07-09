@@ -15,6 +15,15 @@ const COLUMNAS = [
   { key: 'nLecturas', label: 'Nº cierres con datos' },
 ];
 
+function escapeHTML(valor) {
+  return String(valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function montarRanking(contenedor, { repo }) {
   contenedor.innerHTML = `
     <h2>Ranking de más vendidos</h2>
@@ -41,7 +50,7 @@ export async function montarRanking(contenedor, { repo }) {
     tbody.innerHTML = filas
       .map(
         (fila) =>
-          `<tr>${COLUMNAS.map((c) => `<td>${fila[c.key] ?? ''}</td>`).join('')}</tr>`
+          `<tr>${COLUMNAS.map((c) => `<td>${escapeHTML(fila[c.key] ?? '')}</td>`).join('')}</tr>`
       )
       .join('');
   }
