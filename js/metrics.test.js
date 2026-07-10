@@ -18,6 +18,20 @@ test('calcula vendido y repuesto estimados según la secuencia de validación de
   assert.equal(m.nLecturas, 4);
 });
 
+test('expone el último stock de Barcelona conocido', () => {
+  const lecturas = [
+    { fecha: '2026-07-09', cantidadTotal: 100, cantidadBarcelona: 10 },
+    { fecha: '2026-07-16', cantidadTotal: 120, cantidadBarcelona: 28 },
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.stockBarcelona, 28);
+});
+
+test('devuelve null en stock de Barcelona cuando no hay lecturas', () => {
+  const m = calcularMetricasCodigo([]);
+  assert.equal(m.stockBarcelona, null);
+});
+
 test('cuenta eventos de venta y reposición por separado', () => {
   const lecturas = [
     { fecha: '2026-07-09', cantidadTotal: 100 },

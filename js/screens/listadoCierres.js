@@ -88,7 +88,7 @@ export async function montarListadoCierres(contenedor, { repo }) {
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement('a');
     enlace.href = url;
-    enlace.download = `historico-completo-gev-${new Date().toISOString().slice(0, 10)}.csv`;
+    enlace.download = `historico-completo-${new Date().toISOString().slice(0, 10)}.csv`;
     enlace.click();
     URL.revokeObjectURL(url);
   });

@@ -19,7 +19,7 @@ export async function montarCargarCierre(contenedor, { repo }) {
   contenedor.innerHTML = `
     <h2>Cargar cierre — ${cierre.fecha}</h2>
     <p id="contador">Códigos guardados en este cierre: cargando…</p>
-    <textarea id="texto-pegado" rows="12" style="width:100%;" placeholder="Pega aquí el texto de una página de GEV-Online"></textarea>
+    <textarea id="texto-pegado" rows="12" style="width:100%;" placeholder="Pega aquí el texto de una página del proveedor"></textarea>
     <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
       <button id="btn-anadir">Añadir bloque</button>
       <button id="btn-finalizar">Finalizar cierre</button>

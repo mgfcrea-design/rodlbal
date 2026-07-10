@@ -41,6 +41,8 @@ export function calcularMetricasCodigo(lecturas) {
     diasMediosEntreReposiciones: diasMediosEntreFechas(fechasReposicion),
     stockInicial: ordenadas.length > 0 ? ordenadas[0].cantidadTotal : null,
     stockActual: ordenadas.length > 0 ? ordenadas[ordenadas.length - 1].cantidadTotal : null,
+    stockBarcelona:
+      ordenadas.length > 0 ? (ordenadas[ordenadas.length - 1].cantidadBarcelona ?? null) : null,
     nLecturas: ordenadas.length,
   };
 }

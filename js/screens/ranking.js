@@ -6,6 +6,7 @@ const COLUMNAS = [
   { key: 'descripcion', label: 'Descripción' },
   { key: 'stockInicial', label: 'Stock inicial' },
   { key: 'stockActual', label: 'Stock actual' },
+  { key: 'stockBarcelona', label: 'Stock Barcelona' },
   { key: 'vendidoEstimado', label: 'Vendido estimado' },
   { key: 'repuestoEstimado', label: 'Repuesto estimado' },
   { key: 'nEventosVenta', label: 'Nº ventas' },
@@ -14,6 +15,11 @@ const COLUMNAS = [
   { key: 'diasMediosEntreReposiciones', label: 'Días medios entre reposiciones' },
   { key: 'nLecturas', label: 'Nº cierres con datos' },
 ];
+
+// null/asc/desc: al pasar por "null" se vuelve al orden de introducción
+// (el que devuelve calcularRanking, por vendido estimado descendente).
+const ORDEN_SIGUIENTE = { null: 'asc', asc: 'desc', desc: null };
+const FLECHA = { asc: ' ▲', desc: ' ▼' };
 
 function escapeHTML(valor) {
   return String(valor)
@@ -43,11 +49,40 @@ export async function montarRanking(contenedor, { repo }) {
   const ranking = calcularRanking(productos);
 
   const thead = contenedor.querySelector('#tabla-ranking thead');
-  thead.innerHTML = `<tr>${COLUMNAS.map((c) => `<th>${c.label}</th>`).join('')}</tr>`;
+  let orden = { key: null, direccion: null };
 
-  function pintar(filas) {
+  function pintarCabecera() {
+    thead.innerHTML = `<tr>${COLUMNAS.map(
+      (c) =>
+        `<th data-key="${c.key}" style="cursor:pointer;user-select:none;">${c.label}${
+          orden.key === c.key ? FLECHA[orden.direccion] : ''
+        }</th>`
+    ).join('')}</tr>`;
+  }
+
+  function filasVisibles() {
+    const texto = contenedor.querySelector('#buscador').value.toLowerCase();
+    const filtradas = ranking.filter(
+      (fila) =>
+        fila.codigo.toLowerCase().includes(texto) ||
+        fila.descripcion.toLowerCase().includes(texto)
+    );
+    if (!orden.direccion) return filtradas;
+    const signo = orden.direccion === 'asc' ? 1 : -1;
+    return [...filtradas].sort((a, b) => {
+      const va = a[orden.key];
+      const vb = b[orden.key];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === 'number' && typeof vb === 'number') return signo * (va - vb);
+      return signo * String(va).localeCompare(String(vb));
+    });
+  }
+
+  function pintar() {
     const tbody = contenedor.querySelector('#tabla-ranking tbody');
-    tbody.innerHTML = filas
+    tbody.innerHTML = filasVisibles()
       .map(
         (fila) =>
           `<tr>${COLUMNAS.map((c) => `<td>${escapeHTML(fila[c.key] ?? '')}</td>`).join('')}</tr>`
@@ -55,22 +90,29 @@ export async function montarRanking(contenedor, { repo }) {
       .join('');
   }
 
-  pintar(ranking);
+  pintarCabecera();
+  pintar();
 
-  contenedor.querySelector('#buscador').addEventListener('input', (evento) => {
-    const texto = evento.target.value.toLowerCase();
-    pintar(
-      ranking.filter(
-        (fila) =>
-          fila.codigo.toLowerCase().includes(texto) ||
-          fila.descripcion.toLowerCase().includes(texto)
-      )
-    );
+  thead.addEventListener('click', (evento) => {
+    const th = evento.target.closest('th[data-key]');
+    if (!th) return;
+    const key = th.dataset.key;
+    orden = {
+      key,
+      direccion: orden.key === key ? ORDEN_SIGUIENTE[String(orden.direccion)] : 'asc',
+    };
+    if (!orden.direccion) orden = { key: null, direccion: null };
+    pintarCabecera();
+    pintar();
+  });
+
+  contenedor.querySelector('#buscador').addEventListener('input', () => {
+    pintar();
   });
 
   contenedor.querySelector('#btn-csv').addEventListener('click', () => {
-    const csv = aCSV(ranking, COLUMNAS);
-    descargarCSV(csv, `ranking-gev-${new Date().toISOString().slice(0, 10)}.csv`);
+    const csv = aCSV(filasVisibles(), COLUMNAS);
+    descargarCSV(csv, `ranking-${new Date().toISOString().slice(0, 10)}.csv`);
   });
 }
 

@@ -3,7 +3,7 @@ import { iniciarSesion } from '../auth.js';
 export function montarLogin(contenedor) {
   contenedor.innerHTML = `
     <form id="form-login" style="max-width:320px;margin:4rem auto;display:flex;flex-direction:column;gap:0.75rem;">
-      <h1>Monitor de Stock GEV</h1>
+      <h1>Monitor de Stock</h1>
       <input type="email" id="login-email" placeholder="Email" required autocomplete="username" />
       <input type="password" id="login-password" placeholder="Contraseña" required autocomplete="current-password" />
       <button type="submit">Entrar</button>

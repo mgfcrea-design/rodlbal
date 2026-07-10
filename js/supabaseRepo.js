@@ -151,7 +151,7 @@ export const supabaseRepo = {
     const lecturas = await fetchTodasLasFilas((desde, hasta) =>
       supabase
         .from('lecturas_stock')
-        .select('codigo, cantidad_total, cierres!inner(fecha, estado)')
+        .select('codigo, cantidad_total, cantidad_barcelona, cierres!inner(fecha, estado)')
         .eq('cierres.estado', 'finalizado')
         .range(desde, hasta)
     );
@@ -159,7 +159,11 @@ export const supabaseRepo = {
     const lecturasPorCodigo = new Map();
     for (const l of lecturas) {
       const lista = lecturasPorCodigo.get(l.codigo) || [];
-      lista.push({ fecha: l.cierres.fecha, cantidadTotal: l.cantidad_total });
+      lista.push({
+        fecha: l.cierres.fecha,
+        cantidadTotal: l.cantidad_total,
+        cantidadBarcelona: l.cantidad_barcelona,
+      });
       lecturasPorCodigo.set(l.codigo, lista);
     }
 
