@@ -1,5 +1,6 @@
 import { calcularRanking } from '../metrics.js';
 import { aCSV } from '../csv.js';
+import { urlFichaGev } from '../gevLink.js';
 
 const COLUMNAS = [
   { key: 'codigo', label: 'Código' },
@@ -52,7 +53,7 @@ export async function montarRanking(contenedor, { repo }) {
   let orden = { key: null, direccion: null };
 
   function pintarCabecera() {
-    thead.innerHTML = `<tr>${COLUMNAS.map(
+    thead.innerHTML = `<tr><th>Nº</th>${COLUMNAS.map(
       (c) =>
         `<th data-key="${c.key}" style="cursor:pointer;user-select:none;">${c.label}${
           orden.key === c.key ? FLECHA[orden.direccion] : ''
@@ -80,13 +81,18 @@ export async function montarRanking(contenedor, { repo }) {
     });
   }
 
+  function celda(fila, c) {
+    if (c.key === 'codigo') {
+      const href = escapeHTML(urlFichaGev(fila.codigo));
+      return `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${escapeHTML(fila.codigo)}</a></td>`;
+    }
+    return `<td>${escapeHTML(fila[c.key] ?? '')}</td>`;
+  }
+
   function pintar() {
     const tbody = contenedor.querySelector('#tabla-ranking tbody');
     tbody.innerHTML = filasVisibles()
-      .map(
-        (fila) =>
-          `<tr>${COLUMNAS.map((c) => `<td>${escapeHTML(fila[c.key] ?? '')}</td>`).join('')}</tr>`
-      )
+      .map((fila, i) => `<tr><td>${i + 1}</td>${COLUMNAS.map((c) => celda(fila, c)).join('')}</tr>`)
       .join('');
   }
 
@@ -111,7 +117,8 @@ export async function montarRanking(contenedor, { repo }) {
   });
 
   contenedor.querySelector('#btn-csv').addEventListener('click', () => {
-    const csv = aCSV(filasVisibles(), COLUMNAS);
+    const filasNumeradas = filasVisibles().map((fila, i) => ({ ...fila, _numero: i + 1 }));
+    const csv = aCSV(filasNumeradas, [{ key: '_numero', label: 'Nº' }, ...COLUMNAS]);
     descargarCSV(csv, `ranking-${new Date().toISOString().slice(0, 10)}.csv`);
   });
 }

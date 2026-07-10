@@ -1,3 +1,5 @@
+import { urlFichaGev } from '../gevLink.js';
+
 function escapeHTML(valor) {
   return String(valor)
     .replace(/&/g, '&amp;')
@@ -37,7 +39,7 @@ export async function montarFichaHistorica(contenedor, { repo }) {
     resultadosEl.innerHTML = productos
       .map(
         (p) =>
-          `<li data-codigo="${escapeHTML(p.codigo)}" style="cursor:pointer;">${escapeHTML(p.codigo)} — ${escapeHTML(p.descripcion)}</li>`
+          `<li data-codigo="${escapeHTML(p.codigo)}" style="cursor:pointer;"><a href="${escapeHTML(urlFichaGev(p.codigo))}" target="_blank" rel="noopener noreferrer">${escapeHTML(p.codigo)}</a> — ${escapeHTML(p.descripcion)}</li>`
       )
       .join('');
   });
@@ -69,7 +71,7 @@ export async function montarFichaHistorica(contenedor, { repo }) {
       .join('');
 
     detalleEl.innerHTML = `
-      <h3>${escapeHTML(codigo)}</h3>
+      <h3><a href="${escapeHTML(urlFichaGev(codigo))}" target="_blank" rel="noopener noreferrer">${escapeHTML(codigo)}</a></h3>
       ${dibujarGrafico(lecturas)}
       <table>
         <thead><tr><th>Fecha</th><th>Stock</th><th>Barcelona</th><th>Precio neto</th><th>Delta</th></tr></thead>
