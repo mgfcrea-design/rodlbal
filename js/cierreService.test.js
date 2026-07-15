@@ -44,6 +44,9 @@ function crearRepoFalso() {
       const cierre = cierres.find((c) => c.id === cierreId);
       cierre.estado = 'finalizado';
     },
+    async getCierreByFecha(fecha) {
+      return cierres.find((c) => c.fecha === fecha) || null;
+    },
     // helpers de inspección para los tests
     _cierres: cierres,
     _lecturas: lecturas,
@@ -63,6 +66,17 @@ test('abrirOReanudarCierre reanuda el existente en progreso en vez de crear otro
   const segundo = await abrirOReanudarCierre(repo, '2026-07-10');
   assert.equal(segundo.id, primero.id);
   assert.equal(repo._cierres.length, 1);
+});
+
+test('abrirOReanudarCierre falla con mensaje claro si ya hay un cierre finalizado en esa fecha', async () => {
+  const repo = crearRepoFalso();
+  const cierre = await abrirOReanudarCierre(repo, '2026-07-09');
+  await repo.finalizarCierre(cierre.id);
+
+  await assert.rejects(
+    () => abrirOReanudarCierre(repo, '2026-07-09'),
+    /Ya existe un cierre finalizado para 2026-07-09/
+  );
 });
 
 test('procesarBloque separa artículos nuevos de duplicados dentro del mismo cierre', async () => {

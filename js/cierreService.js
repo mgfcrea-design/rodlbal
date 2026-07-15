@@ -1,6 +1,14 @@
 export async function abrirOReanudarCierre(repo, fechaPorDefecto) {
   const enProgreso = await repo.getCierreEnProgreso();
   if (enProgreso) return enProgreso;
+
+  const existente = await repo.getCierreByFecha(fechaPorDefecto);
+  if (existente) {
+    throw new Error(
+      `Ya existe un cierre finalizado para ${fechaPorDefecto}. No se puede abrir otro el mismo día.`
+    );
+  }
+
   return repo.crearCierre(fechaPorDefecto);
 }
 

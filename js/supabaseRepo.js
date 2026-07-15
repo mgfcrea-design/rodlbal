@@ -37,6 +37,16 @@ export const supabaseRepo = {
     return data ? { id: data.id, fecha: data.fecha, nCodigos: data.n_codigos } : null;
   },
 
+  async getCierreByFecha(fecha) {
+    const { data, error } = await supabase
+      .from('cierres')
+      .select('id, fecha, estado')
+      .eq('fecha', fecha)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async crearCierre(fecha) {
     const { data, error } = await supabase
       .from('cierres')
