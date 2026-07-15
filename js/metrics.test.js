@@ -28,6 +28,8 @@ test('calcula el vendido estimado exclusivo de Barcelona', () => {
   const m = calcularMetricasCodigo(lecturas);
   // ventas Barcelona: 20->12 (8) y 30->25 (5); la reposición 12->30 no cuenta
   assert.equal(m.vendidoEstimadoBarcelona, 13);
+  // reposición Barcelona: 12->30 (18); las ventas no cuentan
+  assert.equal(m.repuestoEstimadoBarcelona, 18);
 });
 
 test('ignora el vendido estimado de Barcelona cuando falta el dato en alguna lectura', () => {

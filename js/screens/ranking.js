@@ -11,6 +11,7 @@ const COLUMNAS = [
   { key: 'vendidoEstimado', label: 'Vendido estimado' },
   { key: 'vendidoEstimadoBarcelona', label: 'Vendido estimado Barcelona' },
   { key: 'repuestoEstimado', label: 'Repuesto estimado' },
+  { key: 'repuestoEstimadoBarcelona', label: 'Repuesto estimado Barcelona' },
   { key: 'diasMediosEntreVentas', label: 'Días medios entre ventas' },
   { key: 'nEventosReposicion', label: 'Nº reposiciones' },
   { key: 'diasMediosEntreReposiciones', label: 'Días medios entre reposiciones' },
@@ -22,6 +23,11 @@ const COLUMNAS = [
 // (el que devuelve calcularRanking, por vendido estimado descendente).
 const ORDEN_SIGUIENTE = { null: 'asc', asc: 'desc', desc: null };
 const FLECHA = { asc: ' ▲', desc: ' ▼' };
+
+function diaMes(fecha) {
+  const [, mes, dia] = fecha.split('-');
+  return `${dia}-${mes}`;
+}
 
 function escapeHTML(valor) {
   return String(valor)
@@ -88,7 +94,7 @@ export async function montarRanking(contenedor, { repo }) {
       return `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${escapeHTML(fila.codigo)}</a></td>`;
     }
     if (c.key === 'fechasLecturas') {
-      return `<td>${escapeHTML((fila.fechasLecturas ?? []).join(', '))}</td>`;
+      return `<td>${escapeHTML((fila.fechasLecturas ?? []).map(diaMes).join(', '))}</td>`;
     }
     return `<td>${escapeHTML(fila[c.key] ?? '')}</td>`;
   }
@@ -124,7 +130,7 @@ export async function montarRanking(contenedor, { repo }) {
     const filasNumeradas = filasVisibles().map((fila, i) => ({
       ...fila,
       _numero: i + 1,
-      fechasLecturas: (fila.fechasLecturas ?? []).join(', '),
+      fechasLecturas: (fila.fechasLecturas ?? []).map(diaMes).join(', '),
     }));
     const csv = aCSV(filasNumeradas, [{ key: '_numero', label: 'Nº' }, ...COLUMNAS]);
     descargarCSV(csv, `ranking-${new Date().toISOString().slice(0, 10)}.csv`);

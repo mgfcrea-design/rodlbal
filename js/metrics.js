@@ -19,6 +19,7 @@ export function calcularMetricasCodigo(lecturas) {
   let vendidoEstimado = 0;
   let repuestoEstimado = 0;
   let vendidoEstimadoBarcelona = 0;
+  let repuestoEstimadoBarcelona = 0;
   const fechasVenta = [];
   const fechasReposicion = [];
 
@@ -34,8 +35,9 @@ export function calcularMetricasCodigo(lecturas) {
 
     const anteriorBcn = ordenadas[i - 1].cantidadBarcelona;
     const actualBcn = ordenadas[i].cantidadBarcelona;
-    if (anteriorBcn != null && actualBcn != null && actualBcn < anteriorBcn) {
-      vendidoEstimadoBarcelona += anteriorBcn - actualBcn;
+    if (anteriorBcn != null && actualBcn != null) {
+      if (actualBcn < anteriorBcn) vendidoEstimadoBarcelona += anteriorBcn - actualBcn;
+      else if (actualBcn > anteriorBcn) repuestoEstimadoBarcelona += actualBcn - anteriorBcn;
     }
   }
 
@@ -43,6 +45,7 @@ export function calcularMetricasCodigo(lecturas) {
     vendidoEstimado,
     vendidoEstimadoBarcelona,
     repuestoEstimado,
+    repuestoEstimadoBarcelona,
     nEventosVenta: fechasVenta.length,
     nEventosReposicion: fechasReposicion.length,
     diasMediosEntreVentas: diasMediosEntreFechas(fechasVenta),
