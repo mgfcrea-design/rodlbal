@@ -18,6 +18,7 @@ export function calcularMetricasCodigo(lecturas) {
 
   let vendidoEstimado = 0;
   let repuestoEstimado = 0;
+  let vendidoEstimadoBarcelona = 0;
   const fechasVenta = [];
   const fechasReposicion = [];
 
@@ -30,10 +31,17 @@ export function calcularMetricasCodigo(lecturas) {
       repuestoEstimado += delta;
       fechasReposicion.push(ordenadas[i].fecha);
     }
+
+    const anteriorBcn = ordenadas[i - 1].cantidadBarcelona;
+    const actualBcn = ordenadas[i].cantidadBarcelona;
+    if (anteriorBcn != null && actualBcn != null && actualBcn < anteriorBcn) {
+      vendidoEstimadoBarcelona += anteriorBcn - actualBcn;
+    }
   }
 
   return {
     vendidoEstimado,
+    vendidoEstimadoBarcelona,
     repuestoEstimado,
     nEventosVenta: fechasVenta.length,
     nEventosReposicion: fechasReposicion.length,
@@ -44,6 +52,7 @@ export function calcularMetricasCodigo(lecturas) {
     stockBarcelona:
       ordenadas.length > 0 ? (ordenadas[ordenadas.length - 1].cantidadBarcelona ?? null) : null,
     nLecturas: ordenadas.length,
+    fechasLecturas: ordenadas.map((l) => l.fecha),
   };
 }
 

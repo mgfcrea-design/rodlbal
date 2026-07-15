@@ -18,6 +18,36 @@ test('calcula vendido y repuesto estimados según la secuencia de validación de
   assert.equal(m.nLecturas, 4);
 });
 
+test('calcula el vendido estimado exclusivo de Barcelona', () => {
+  const lecturas = [
+    { fecha: '2026-07-09', cantidadTotal: 100, cantidadBarcelona: 20 },
+    { fecha: '2026-07-11', cantidadTotal: 70, cantidadBarcelona: 12 },
+    { fecha: '2026-07-14', cantidadTotal: 150, cantidadBarcelona: 30 },
+    { fecha: '2026-07-16', cantidadTotal: 120, cantidadBarcelona: 25 },
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  // ventas Barcelona: 20->12 (8) y 30->25 (5); la reposición 12->30 no cuenta
+  assert.equal(m.vendidoEstimadoBarcelona, 13);
+});
+
+test('ignora el vendido estimado de Barcelona cuando falta el dato en alguna lectura', () => {
+  const lecturas = [
+    { fecha: '2026-07-09', cantidadTotal: 100, cantidadBarcelona: 20 },
+    { fecha: '2026-07-11', cantidadTotal: 70 },
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.vendidoEstimadoBarcelona, 0);
+});
+
+test('expone las fechas de los cierres en que aparece el artículo', () => {
+  const lecturas = [
+    { fecha: '2026-07-16', cantidadTotal: 120 },
+    { fecha: '2026-07-09', cantidadTotal: 100 },
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.deepEqual(m.fechasLecturas, ['2026-07-09', '2026-07-16']);
+});
+
 test('expone el último stock de Barcelona conocido', () => {
   const lecturas = [
     { fecha: '2026-07-09', cantidadTotal: 100, cantidadBarcelona: 10 },

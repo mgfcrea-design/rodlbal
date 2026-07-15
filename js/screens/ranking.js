@@ -9,12 +9,13 @@ const COLUMNAS = [
   { key: 'stockActual', label: 'Stock actual' },
   { key: 'stockBarcelona', label: 'Stock Barcelona' },
   { key: 'vendidoEstimado', label: 'Vendido estimado' },
+  { key: 'vendidoEstimadoBarcelona', label: 'Vendido estimado Barcelona' },
   { key: 'repuestoEstimado', label: 'Repuesto estimado' },
-  { key: 'nEventosVenta', label: 'Nº ventas' },
   { key: 'diasMediosEntreVentas', label: 'Días medios entre ventas' },
   { key: 'nEventosReposicion', label: 'Nº reposiciones' },
   { key: 'diasMediosEntreReposiciones', label: 'Días medios entre reposiciones' },
   { key: 'nLecturas', label: 'Nº cierres con datos' },
+  { key: 'fechasLecturas', label: 'Cierres en que aparece' },
 ];
 
 // null/asc/desc: al pasar por "null" se vuelve al orden de introducción
@@ -86,6 +87,9 @@ export async function montarRanking(contenedor, { repo }) {
       const href = escapeHTML(urlFichaGev(fila.codigo));
       return `<td><a href="${href}" target="_blank" rel="noopener noreferrer">${escapeHTML(fila.codigo)}</a></td>`;
     }
+    if (c.key === 'fechasLecturas') {
+      return `<td>${escapeHTML((fila.fechasLecturas ?? []).join(', '))}</td>`;
+    }
     return `<td>${escapeHTML(fila[c.key] ?? '')}</td>`;
   }
 
@@ -117,7 +121,11 @@ export async function montarRanking(contenedor, { repo }) {
   });
 
   contenedor.querySelector('#btn-csv').addEventListener('click', () => {
-    const filasNumeradas = filasVisibles().map((fila, i) => ({ ...fila, _numero: i + 1 }));
+    const filasNumeradas = filasVisibles().map((fila, i) => ({
+      ...fila,
+      _numero: i + 1,
+      fechasLecturas: (fila.fechasLecturas ?? []).join(', '),
+    }));
     const csv = aCSV(filasNumeradas, [{ key: '_numero', label: 'Nº' }, ...COLUMNAS]);
     descargarCSV(csv, `ranking-${new Date().toISOString().slice(0, 10)}.csv`);
   });
