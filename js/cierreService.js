@@ -27,6 +27,24 @@ export async function guardarArticulos(repo, cierreId, articulos, { sobrescribir
   return aGuardar.length;
 }
 
+export function compararCodigos(codigosA, codigosB) {
+  const setA = new Set(codigosA);
+  const setB = new Set(codigosB);
+  return {
+    soloEnB: [...setB].filter((c) => !setA.has(c)),
+    soloEnA: [...setA].filter((c) => !setB.has(c)),
+    comunes: [...setA].filter((c) => setB.has(c)),
+  };
+}
+
+export async function compararCierres(repo, cierreIdA, cierreIdB) {
+  const [codigosA, codigosB] = await Promise.all([
+    repo.getCodigosDeCierre(cierreIdA),
+    repo.getCodigosDeCierre(cierreIdB),
+  ]);
+  return compararCodigos(codigosA, codigosB);
+}
+
 export async function finalizarCierre(repo, cierreId) {
   const codigosActuales = new Set(await repo.getCodigosDeCierre(cierreId));
   const anterior = await repo.getUltimoCierreFinalizado(cierreId);

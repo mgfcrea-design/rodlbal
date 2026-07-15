@@ -5,6 +5,8 @@ import {
   procesarBloque,
   guardarArticulos,
   finalizarCierre,
+  compararCodigos,
+  compararCierres,
 } from './cierreService.js';
 
 function crearRepoFalso() {
@@ -151,4 +153,26 @@ test('finalizarCierre detecta códigos nuevos y desaparecidos respecto al cierre
 
   assert.deepEqual(nuevos, ['C3']);
   assert.deepEqual(desaparecidos, ['B2']);
+});
+
+test('compararCodigos separa códigos exclusivos de cada lado y los comunes', () => {
+  const { soloEnA, soloEnB, comunes } = compararCodigos(['A1', 'B2', 'C3'], ['B2', 'C3', 'D4']);
+  assert.deepEqual(soloEnA, ['A1']);
+  assert.deepEqual(soloEnB, ['D4']);
+  assert.deepEqual(comunes, ['B2', 'C3']);
+});
+
+test('compararCierres compara los códigos de dos cierres cualesquiera, no solo consecutivos', async () => {
+  const repo = crearRepoFalso();
+
+  const cierre1 = await repo.crearCierre('2026-07-09');
+  await repo.guardarLecturas(cierre1.id, [{ codigo: 'A1' }, { codigo: 'B2' }]);
+
+  const cierre2 = await repo.crearCierre('2026-07-11');
+  await repo.guardarLecturas(cierre2.id, [{ codigo: 'B2' }, { codigo: 'C3' }]);
+
+  const { soloEnA, soloEnB, comunes } = await compararCierres(repo, cierre1.id, cierre2.id);
+  assert.deepEqual(soloEnA, ['A1']);
+  assert.deepEqual(soloEnB, ['C3']);
+  assert.deepEqual(comunes, ['B2']);
 });
