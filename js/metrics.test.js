@@ -41,6 +41,63 @@ test('ignora el vendido estimado de Barcelona cuando falta el dato en alguna lec
   assert.equal(m.vendidoEstimadoBarcelona, 0);
 });
 
+test('estima los días hasta rotura de stock a partir de la velocidad de venta observada', () => {
+  const lecturas = [
+    { fecha: '2026-07-01', cantidadTotal: 100 },
+    { fecha: '2026-07-11', cantidadTotal: 80 }, // 20 uds. vendidas en 10 días -> 2 uds./día
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.diasHastaRotura, 40); // 80 uds. / 2 uds. por día
+});
+
+test('diasHastaRotura es null sin ventas o con una sola lectura', () => {
+  assert.equal(calcularMetricasCodigo([{ fecha: '2026-07-01', cantidadTotal: 100 }]).diasHastaRotura, null);
+  assert.equal(
+    calcularMetricasCodigo([
+      { fecha: '2026-07-01', cantidadTotal: 100 },
+      { fecha: '2026-07-11', cantidadTotal: 100 },
+    ]).diasHastaRotura,
+    null
+  );
+});
+
+test('cuenta las roturas de stock (lecturas a 0) a nivel nacional y de Barcelona', () => {
+  const lecturas = [
+    { fecha: '2026-07-01', cantidadTotal: 10, cantidadBarcelona: 0 },
+    { fecha: '2026-07-05', cantidadTotal: 0, cantidadBarcelona: 5 },
+    { fecha: '2026-07-09', cantidadTotal: 8, cantidadBarcelona: 0 },
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.nRoturasStock, 1);
+  assert.equal(m.nRoturasStockBarcelona, 2);
+});
+
+test('calcula el porcentaje de stock en Barcelona sobre el total', () => {
+  const lecturas = [{ fecha: '2026-07-01', cantidadTotal: 200, cantidadBarcelona: 50 }];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.porcentajeStockBarcelona, 25);
+});
+
+test('porcentajeStockBarcelona es null si no hay stock actual', () => {
+  const lecturas = [{ fecha: '2026-07-01', cantidadTotal: 0, cantidadBarcelona: 0 }];
+  assert.equal(calcularMetricasCodigo(lecturas).porcentajeStockBarcelona, null);
+});
+
+test('calcula el ratio repuesto/vendido como señal de fiabilidad de suministro', () => {
+  const lecturas = [
+    { fecha: '2026-07-01', cantidadTotal: 100 },
+    { fecha: '2026-07-05', cantidadTotal: 60 }, // vendido 40
+    { fecha: '2026-07-09', cantidadTotal: 80 }, // repuesto 20
+  ];
+  const m = calcularMetricasCodigo(lecturas);
+  assert.equal(m.ratioRepuestoVendido, 0.5); // 20 repuesto / 40 vendido
+});
+
+test('ratioRepuestoVendido es null si no hubo ventas', () => {
+  const lecturas = [{ fecha: '2026-07-01', cantidadTotal: 100 }];
+  assert.equal(calcularMetricasCodigo(lecturas).ratioRepuestoVendido, null);
+});
+
 test('expone las fechas de los cierres en que aparece el artículo', () => {
   const lecturas = [
     { fecha: '2026-07-16', cantidadTotal: 120 },

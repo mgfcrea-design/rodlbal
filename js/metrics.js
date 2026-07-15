@@ -41,6 +41,25 @@ export function calcularMetricasCodigo(lecturas) {
     }
   }
 
+  const stockActual = ordenadas.length > 0 ? ordenadas[ordenadas.length - 1].cantidadTotal : null;
+  const stockBarcelona =
+    ordenadas.length > 0 ? (ordenadas[ordenadas.length - 1].cantidadBarcelona ?? null) : null;
+
+  const diasObservados =
+    ordenadas.length > 1
+      ? diferenciaDias(ordenadas[0].fecha, ordenadas[ordenadas.length - 1].fecha)
+      : 0;
+  const diasHastaRotura =
+    diasObservados > 0 && vendidoEstimado > 0 && stockActual != null
+      ? Math.round((stockActual * diasObservados) / vendidoEstimado)
+      : null;
+
+  const porcentajeStockBarcelona =
+    stockActual > 0 && stockBarcelona != null ? Math.round((stockBarcelona / stockActual) * 100) : null;
+
+  const ratioRepuestoVendido =
+    vendidoEstimado > 0 ? Math.round((repuestoEstimado / vendidoEstimado) * 100) / 100 : null;
+
   return {
     vendidoEstimado,
     vendidoEstimadoBarcelona,
@@ -51,9 +70,13 @@ export function calcularMetricasCodigo(lecturas) {
     diasMediosEntreVentas: diasMediosEntreFechas(fechasVenta),
     diasMediosEntreReposiciones: diasMediosEntreFechas(fechasReposicion),
     stockInicial: ordenadas.length > 0 ? ordenadas[0].cantidadTotal : null,
-    stockActual: ordenadas.length > 0 ? ordenadas[ordenadas.length - 1].cantidadTotal : null,
-    stockBarcelona:
-      ordenadas.length > 0 ? (ordenadas[ordenadas.length - 1].cantidadBarcelona ?? null) : null,
+    stockActual,
+    stockBarcelona,
+    porcentajeStockBarcelona,
+    diasHastaRotura,
+    nRoturasStock: ordenadas.filter((l) => l.cantidadTotal === 0).length,
+    nRoturasStockBarcelona: ordenadas.filter((l) => l.cantidadBarcelona === 0).length,
+    ratioRepuestoVendido,
     nLecturas: ordenadas.length,
     fechasLecturas: ordenadas.map((l) => l.fecha),
   };
