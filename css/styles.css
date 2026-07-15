@@ -9,7 +9,22 @@ body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
 #nav a:hover { background: #8882; }
 #app { padding: var(--gap); max-width: 1100px; margin: 0 auto; }
 table { border-collapse: collapse; width: 100%; }
-th, td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #8884; text-align: left; font-size: 0.9rem; }
+th, td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #8884;
+  border-right: 1px solid #8884;
+  text-align: left;
+  font-size: 0.9rem;
+}
+th:last-child, td:last-child { border-right: none; }
+td:nth-child(even) { background: color-mix(in srgb, Canvas, gray 8%); }
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: Canvas;
+}
+thead th:nth-child(even) { background: color-mix(in srgb, Canvas, gray 8%); }
 .aviso { padding: 0.6rem; border-radius: 6px; margin: 0.5rem 0; }
 .aviso-nuevo { background: #2a7d4630; }
 .aviso-desaparecido { background: #b5433030; }
