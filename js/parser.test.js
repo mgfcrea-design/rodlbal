@@ -123,6 +123,26 @@ test('funciona aunque el primer bloque no empiece con la palabra "preview" (pega
   assert.equal(articulos[0].codigo, 'PT00003994');
 });
 
+test('reconoce el bloque cuando GEV muestra la página en francés (Réf. REPA / Prix net)', () => {
+  const bloqueFrances = `Articulo no ubicado en tienda, consultar en mostrador
+preview
+Résistance 4500W 230V L 358mm L1 36mm L2 72mm L3 250mm H1 28mm H2 30mm bride à 3 trous
+Réf. REPA 416267
+Prix catalogue REPA: 225,46 €
+Remise: 50% Prix net : 112,73 €
+ disponible tout de suite
+42 CANT en stock Barcelona 15 CANT`;
+  const { articulos, noReconocidos } = parseBloque(bloqueFrances);
+  assert.equal(noReconocidos, 0);
+  assert.equal(articulos.length, 1);
+  const a = articulos[0];
+  assert.equal(a.codigo, '416267');
+  assert.equal(a.descripcion, 'Résistance 4500W 230V L 358mm L1 36mm L2 72mm L3 250mm H1 28mm H2 30mm bride à 3 trous');
+  assert.equal(a.precioNeto, 112.73);
+  assert.equal(a.cantidadTotal, 42);
+  assert.equal(a.cantidadBarcelona, 15);
+});
+
 test('ignora bloques sin línea de código Nº REPA', () => {
   const textoRoto = `preview
 Descripción huérfana sin código ni cantidad

@@ -1,9 +1,12 @@
-const RE_REPA = /N[ºo°]\s*REPA\s+(\S+)/i;
-const RE_PRECIO = /Precio Neto:\s*([\d.,]+)\s*€/i;
+// GEV muestra la página en distinto idioma según la sesión/cuenta (español o
+// francés), así que las etiquetas se reconocen en ambos idiomas.
+const RE_REPA = /(?:N[ºo°]|Réf\.?)\s*REPA\s+(\S+)/i;
+const RE_PRECIO = /(?:Precio Neto|Prix net)\s*:\s*([\d.,]+)\s*€/i;
 const RE_CANT = /^(\d+)\s*(?:CANT|Metro)\s+en stock(?:\s+Barcelona\s+(\d+)\s*(?:CANT|Metro))?/i;
 const LINEAS_DESCARTABLES = new Set([
   'preview',
   'un artículo alternativo está disponible',
+  'articulo no ubicado en tienda, consultar en mostrador',
 ]);
 const VENTANA_BUSQUEDA = 20;
 
