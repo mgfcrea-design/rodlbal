@@ -1,5 +1,5 @@
 import { aCSV } from '../csv.js';
-import { compararCierres } from '../cierreService.js';
+import { compararCierres, filtrarLecturasPorTexto } from '../cierreService.js';
 
 const COLUMNAS_EXPORT_COMPLETO = [
   { key: 'codigo', label: 'Código' },
@@ -37,6 +37,14 @@ export async function montarListadoCierres(contenedor, { repo }) {
       <button id="btn-comparar-cierres">Comparar</button>
     </div>
     <div id="resultado-comparacion"></div>
+
+    <h3>Eliminar códigos de un cierre</h3>
+    <p>Para quitar artículos que se colaron por error (p. ej. accesorios en vez de resistencias). Solo borra la lectura de ese cierre — el código sigue existiendo en los demás.</p>
+    <div style="display:flex;gap:0.5rem;align-items:end;flex-wrap:wrap;">
+      <label>Cierre <select id="select-cierre-limpiar"></select></label>
+      <input id="filtro-limpiar" type="search" placeholder="Filtrar por código o descripción" style="min-width:220px;" />
+    </div>
+    <div id="resultado-limpiar"></div>
   `;
 
   const avisoEl = contenedor.querySelector('#aviso-listado');
@@ -75,6 +83,7 @@ export async function montarListadoCierres(contenedor, { repo }) {
       .join('');
     contenedor.querySelector('#select-cierre-a').innerHTML = opciones;
     contenedor.querySelector('#select-cierre-b').innerHTML = opciones;
+    contenedor.querySelector('#select-cierre-limpiar').innerHTML = opciones;
   }
 
   contenedor.querySelector('#tabla-cierres tbody').addEventListener('click', async (evento) => {
@@ -121,6 +130,101 @@ export async function montarListadoCierres(contenedor, { repo }) {
       <details><summary>Solo en A (${soloEnA.length})</summary>${escapeHTML(soloEnA.join(', '))}</details>
       <details><summary>Solo en B (${soloEnB.length})</summary>${escapeHTML(soloEnB.join(', '))}</details>
     `;
+  });
+
+  let lecturasCierreActual = [];
+  const seleccionados = new Set();
+
+  function pintarLimpiar() {
+    const resultadoEl = contenedor.querySelector('#resultado-limpiar');
+    if (lecturasCierreActual.length === 0) {
+      resultadoEl.innerHTML = '';
+      return;
+    }
+
+    const texto = contenedor.querySelector('#filtro-limpiar').value;
+    const visibles = filtrarLecturasPorTexto(lecturasCierreActual, texto);
+
+    resultadoEl.innerHTML = `
+      <p>
+        <label><input type="checkbox" id="check-todos-limpiar" /> Seleccionar los ${visibles.length} visibles</label>
+        · <strong>${seleccionados.size}</strong> seleccionados
+        <button id="btn-eliminar-seleccionados" ${seleccionados.size === 0 ? 'disabled' : ''}>Eliminar seleccionados</button>
+      </p>
+      <ul style="max-height:300px;overflow:auto;list-style:none;padding:0;">
+        ${visibles
+          .map(
+            (l) => `<li>
+              <label>
+                <input type="checkbox" class="check-lectura" data-codigo="${escapeHTML(l.codigo)}" ${seleccionados.has(l.codigo) ? 'checked' : ''} />
+                ${escapeHTML(l.codigo)} — ${escapeHTML(l.descripcion)}
+              </label>
+            </li>`
+          )
+          .join('')}
+      </ul>
+    `;
+  }
+
+  contenedor.querySelector('#select-cierre-limpiar').addEventListener('change', async (evento) => {
+    const id = Number(evento.target.value);
+    seleccionados.clear();
+    lecturasCierreActual = [];
+    const resultadoEl = contenedor.querySelector('#resultado-limpiar');
+    if (!id) {
+      pintarLimpiar();
+      return;
+    }
+    resultadoEl.innerHTML = '<p>Cargando…</p>';
+    try {
+      lecturasCierreActual = await repo.getLecturasConDescripcion(id);
+    } catch (error) {
+      resultadoEl.innerHTML = `<p class="aviso aviso-desaparecido">Error al cargar los códigos: ${escapeHTML(error.message)}. Vuelve a intentarlo.</p>`;
+      return;
+    }
+    pintarLimpiar();
+  });
+
+  contenedor.querySelector('#filtro-limpiar').addEventListener('input', () => pintarLimpiar());
+
+  contenedor.querySelector('#resultado-limpiar').addEventListener('change', (evento) => {
+    if (evento.target.id === 'check-todos-limpiar') {
+      const texto = contenedor.querySelector('#filtro-limpiar').value;
+      const visibles = filtrarLecturasPorTexto(lecturasCierreActual, texto);
+      if (evento.target.checked) visibles.forEach((l) => seleccionados.add(l.codigo));
+      else visibles.forEach((l) => seleccionados.delete(l.codigo));
+      pintarLimpiar();
+      return;
+    }
+    if (evento.target.classList.contains('check-lectura')) {
+      const codigo = evento.target.dataset.codigo;
+      if (evento.target.checked) seleccionados.add(codigo);
+      else seleccionados.delete(codigo);
+      pintarLimpiar();
+    }
+  });
+
+  contenedor.querySelector('#resultado-limpiar').addEventListener('click', async (evento) => {
+    if (evento.target.id !== 'btn-eliminar-seleccionados') return;
+    const cierreId = Number(contenedor.querySelector('#select-cierre-limpiar').value);
+    const codigos = [...seleccionados];
+    if (!confirm(`¿Eliminar ${codigos.length} código(s) de este cierre? Esta acción no se puede deshacer.`)) return;
+
+    try {
+      await repo.eliminarLecturasDeCierre(cierreId, codigos);
+    } catch (error) {
+      contenedor.querySelector('#resultado-limpiar').insertAdjacentHTML(
+        'afterbegin',
+        `<p class="aviso aviso-desaparecido">Error al eliminar: ${escapeHTML(error.message)}. Vuelve a intentarlo.</p>`
+      );
+      return;
+    }
+
+    seleccionados.clear();
+    lecturasCierreActual = lecturasCierreActual.filter((l) => !codigos.includes(l.codigo));
+    await cargar();
+    contenedor.querySelector('#select-cierre-limpiar').value = String(cierreId);
+    pintarLimpiar();
   });
 
   contenedor.querySelector('#btn-export-completo').addEventListener('click', async () => {

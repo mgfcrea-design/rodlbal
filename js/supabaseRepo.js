@@ -109,6 +109,44 @@ export const supabaseRepo = {
     return data.map((fila) => fila.codigo);
   },
 
+  async getLecturasConDescripcion(cierreId) {
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase
+        .from('lecturas_stock')
+        .select('codigo, productos(descripcion)')
+        .eq('cierre_id', cierreId)
+        .range(desde, hasta)
+    );
+    return data.map((l) => ({ codigo: l.codigo, descripcion: l.productos?.descripcion ?? '' }));
+  },
+
+  async eliminarLecturasDeCierre(cierreId, codigos) {
+    if (codigos.length === 0) return;
+
+    const TAMANO_LOTE = 500;
+    for (let i = 0; i < codigos.length; i += TAMANO_LOTE) {
+      const lote = codigos.slice(i, i + TAMANO_LOTE);
+      const { error } = await supabase
+        .from('lecturas_stock')
+        .delete()
+        .eq('cierre_id', cierreId)
+        .in('codigo', lote);
+      if (error) throw error;
+    }
+
+    const { count, error: errorCount } = await supabase
+      .from('lecturas_stock')
+      .select('id', { count: 'exact', head: true })
+      .eq('cierre_id', cierreId);
+    if (errorCount) throw errorCount;
+
+    const { error: errorUpdate } = await supabase
+      .from('cierres')
+      .update({ n_codigos: count })
+      .eq('id', cierreId);
+    if (errorUpdate) throw errorUpdate;
+  },
+
   async getUltimoCierreFinalizado(antesDeCierreId) {
     const { data: cierreActual, error: errorActual } = await supabase
       .from('cierres')

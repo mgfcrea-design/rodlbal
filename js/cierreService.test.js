@@ -7,6 +7,7 @@ import {
   finalizarCierre,
   compararCodigos,
   compararCierres,
+  filtrarLecturasPorTexto,
 } from './cierreService.js';
 
 function crearRepoFalso() {
@@ -175,4 +176,25 @@ test('compararCierres compara los códigos de dos cierres cualesquiera, no solo 
   assert.deepEqual(soloEnA, ['A1']);
   assert.deepEqual(soloEnB, ['C3']);
   assert.deepEqual(comunes, ['B2']);
+});
+
+test('filtrarLecturasPorTexto busca por código o descripción, sin distinguir mayúsculas', () => {
+  const lecturas = [
+    { codigo: '415021', descripcion: 'Resistencia 6000W' },
+    { codigo: '900100', descripcion: 'Brida de sujeción 3 orificios' },
+    { codigo: '900200', descripcion: 'Tubo de conexión' },
+  ];
+  assert.deepEqual(
+    filtrarLecturasPorTexto(lecturas, 'brida').map((l) => l.codigo),
+    ['900100']
+  );
+  assert.deepEqual(
+    filtrarLecturasPorTexto(lecturas, '9002').map((l) => l.codigo),
+    ['900200']
+  );
+});
+
+test('filtrarLecturasPorTexto devuelve todo cuando el texto está vacío', () => {
+  const lecturas = [{ codigo: 'A1', descripcion: 'X' }];
+  assert.deepEqual(filtrarLecturasPorTexto(lecturas, '  '), lecturas);
 });

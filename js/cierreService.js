@@ -27,6 +27,14 @@ export async function guardarArticulos(repo, cierreId, articulos, { sobrescribir
   return aGuardar.length;
 }
 
+export function filtrarLecturasPorTexto(lecturas, texto) {
+  const q = texto.trim().toLowerCase();
+  if (!q) return lecturas;
+  return lecturas.filter(
+    (l) => l.codigo.toLowerCase().includes(q) || (l.descripcion ?? '').toLowerCase().includes(q)
+  );
+}
+
 export function compararCodigos(codigosA, codigosB) {
   const setA = new Set(codigosA);
   const setB = new Set(codigosB);
