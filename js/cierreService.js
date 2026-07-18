@@ -53,6 +53,14 @@ export async function compararCierres(repo, cierreIdA, cierreIdB) {
   return compararCodigos(codigosA, codigosB);
 }
 
+export async function encontrarProductosHuerfanos(repo) {
+  const [codigosProductos, codigosConLecturas] = await Promise.all([
+    repo.getTodosLosCodigosDeProductos(),
+    repo.getCodigosConLecturas(),
+  ]);
+  return compararCodigos(codigosProductos, codigosConLecturas).soloEnA;
+}
+
 export async function finalizarCierre(repo, cierreId) {
   const codigosActuales = new Set(await repo.getCodigosDeCierre(cierreId));
   const anterior = await repo.getUltimoCierreFinalizado(cierreId);

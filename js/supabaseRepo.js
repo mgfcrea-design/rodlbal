@@ -189,6 +189,31 @@ export const supabaseRepo = {
     if (error) throw error;
   },
 
+  async getTodosLosCodigosDeProductos() {
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase.from('productos').select('codigo').range(desde, hasta)
+    );
+    return data.map((fila) => fila.codigo);
+  },
+
+  async getCodigosConLecturas() {
+    const data = await fetchTodasLasFilas((desde, hasta) =>
+      supabase.from('lecturas_stock').select('codigo').range(desde, hasta)
+    );
+    return [...new Set(data.map((fila) => fila.codigo))];
+  },
+
+  async eliminarProductos(codigos) {
+    if (codigos.length === 0) return;
+
+    const TAMANO_LOTE = 500;
+    for (let i = 0; i < codigos.length; i += TAMANO_LOTE) {
+      const lote = codigos.slice(i, i + TAMANO_LOTE);
+      const { error } = await supabase.from('productos').delete().in('codigo', lote);
+      if (error) throw error;
+    }
+  },
+
   async listarProductosConLecturas() {
     const productos = await fetchTodasLasFilas((desde, hasta) =>
       supabase.from('productos').select('codigo, descripcion').range(desde, hasta)

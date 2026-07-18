@@ -1,5 +1,5 @@
 import { aCSV } from '../csv.js';
-import { compararCierres, filtrarLecturasPorTexto } from '../cierreService.js';
+import { compararCierres, filtrarLecturasPorTexto, encontrarProductosHuerfanos } from '../cierreService.js';
 
 const COLUMNAS_EXPORT_COMPLETO = [
   { key: 'codigo', label: 'Código' },
@@ -45,6 +45,11 @@ export async function montarListadoCierres(contenedor, { repo }) {
       <input id="filtro-limpiar" type="search" placeholder="Filtrar por código o descripción" style="min-width:220px;" />
     </div>
     <div id="resultado-limpiar"></div>
+
+    <h3>Productos huérfanos</h3>
+    <p>Códigos que quedaron en el catálogo sin ninguna lectura en ningún cierre (p. ej. tras eliminarlos de todos los cierres en que aparecían). No salen en el ranking pero siguen ocupando la base de datos.</p>
+    <button id="btn-buscar-huerfanos">Buscar huérfanos</button>
+    <div id="resultado-huerfanos"></div>
   `;
 
   const avisoEl = contenedor.querySelector('#aviso-listado');
@@ -225,6 +230,46 @@ export async function montarListadoCierres(contenedor, { repo }) {
     await cargar();
     contenedor.querySelector('#select-cierre-limpiar').value = String(cierreId);
     pintarLimpiar();
+  });
+
+  contenedor.querySelector('#btn-buscar-huerfanos').addEventListener('click', async () => {
+    const resultadoEl = contenedor.querySelector('#resultado-huerfanos');
+    resultadoEl.innerHTML = '<p>Buscando…</p>';
+
+    let huerfanos;
+    try {
+      huerfanos = await encontrarProductosHuerfanos(repo);
+    } catch (error) {
+      resultadoEl.innerHTML = `<p class="aviso aviso-desaparecido">Error al buscar huérfanos: ${escapeHTML(error.message)}. Vuelve a intentarlo.</p>`;
+      return;
+    }
+
+    if (huerfanos.length === 0) {
+      resultadoEl.innerHTML = '<p>No hay productos huérfanos.</p>';
+      return;
+    }
+
+    resultadoEl.innerHTML = `
+      <p><strong>${huerfanos.length}</strong> producto(s) sin ninguna lectura. <button id="btn-eliminar-huerfanos">Eliminar todos</button></p>
+      <details><summary>Ver códigos</summary>${escapeHTML(huerfanos.join(', '))}</details>
+    `;
+
+    resultadoEl.querySelector('#btn-eliminar-huerfanos').addEventListener('click', async () => {
+      if (
+        !confirm(
+          `¿Eliminar definitivamente ${huerfanos.length} producto(s) huérfano(s) de la base de datos? Esta acción no se puede deshacer.`
+        )
+      ) {
+        return;
+      }
+      try {
+        await repo.eliminarProductos(huerfanos);
+      } catch (error) {
+        resultadoEl.innerHTML = `<p class="aviso aviso-desaparecido">Error al eliminar: ${escapeHTML(error.message)}. Vuelve a intentarlo.</p>`;
+        return;
+      }
+      resultadoEl.innerHTML = `<p class="aviso aviso-nuevo">${huerfanos.length} producto(s) eliminado(s).</p>`;
+    });
   });
 
   contenedor.querySelector('#btn-export-completo').addEventListener('click', async () => {

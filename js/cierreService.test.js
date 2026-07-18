@@ -8,6 +8,7 @@ import {
   compararCodigos,
   compararCierres,
   filtrarLecturasPorTexto,
+  encontrarProductosHuerfanos,
 } from './cierreService.js';
 
 function crearRepoFalso() {
@@ -176,6 +177,19 @@ test('compararCierres compara los códigos de dos cierres cualesquiera, no solo 
   assert.deepEqual(soloEnA, ['A1']);
   assert.deepEqual(soloEnB, ['C3']);
   assert.deepEqual(comunes, ['B2']);
+});
+
+test('encontrarProductosHuerfanos detecta productos sin ninguna lectura en ningún cierre', async () => {
+  const repoHuerfanos = {
+    async getTodosLosCodigosDeProductos() {
+      return ['A1', 'B2', 'C3'];
+    },
+    async getCodigosConLecturas() {
+      return ['A1', 'C3'];
+    },
+  };
+  const huerfanos = await encontrarProductosHuerfanos(repoHuerfanos);
+  assert.deepEqual(huerfanos, ['B2']);
 });
 
 test('filtrarLecturasPorTexto busca por código o descripción, sin distinguir mayúsculas', () => {
